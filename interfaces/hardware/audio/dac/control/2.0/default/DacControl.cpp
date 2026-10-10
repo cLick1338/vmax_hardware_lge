@@ -17,6 +17,7 @@
 #include "DacControl.h"
 
 #include <android-base/logging.h>
+#include <android-base/parseint.h>
 #include <android-base/strings.h>
 #include <cutils/properties.h>
 
@@ -38,7 +39,7 @@ namespace hardware {
 namespace audio {
 namespace dac {
 namespace control {
-namespace V2_0 {
+namespace V2_1 {
 namespace implementation {
 
 static constexpr int32_t MAX_BALANCE_VALUE = 0;
@@ -97,6 +98,8 @@ DacControl::DacControl() {
     essFilterPath.append(ESS_FILTER);
     customFilterPath = std::string(COMMON_ES9218_PATH);
     customFilterPath.append(ESS_CUSTOM_FILTER);
+    statusPath = std::string(COMMON_ES9218_PATH);
+    statusPath.append(OUTPUT_STATUS);
 
     mAudioDevicesFactory_V6_0 = ::android::hardware::audio::V6_0::IDevicesFactory::getService();
     if(mAudioDevicesFactory_V6_0 == nullptr) {
@@ -576,8 +579,59 @@ Return<bool> DacControl::resetCustomFilterCoeffs() {
     return true;
 }
 
+// Output status, from the driver's key=value status file
+
+static DacState parseDacState(const std::string& value) {
+    if (value == "BYPASS") return DacState::BYPASS;
+    if (value == "HIFI" || value == "ACTIVE") return DacState::HIFI;
+    if (value == "IDLE") return DacState::IDLE;
+    return DacState::OFF;
+}
+
+Return<void> DacControl::getOutputStatus(getOutputStatus_cb _hidl_cb) {
+    OutputStatus status = {};
+    status.state = DacState::OFF;
+    status.hifiMode = -1;
+
+    std::ifstream file(statusPath);
+    if (!file.is_open()) {
+        _hidl_cb(false, status);
+        return Void();
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        size_t sep = line.find('=');
+        if (sep == std::string::npos)
+            continue;
+        std::string key = line.substr(0, sep);
+        std::string value = line.substr(sep + 1);
+        int32_t headsetType;
+
+        if (key == "state")
+            status.state = parseDacState(value);
+        else if (key == "rate")
+            android::base::ParseUint(value, &status.sampleRate);
+        else if (key == "bits")
+            android::base::ParseUint(value, &status.bitDepth);
+        else if (key == "dop")
+            android::base::ParseUint(value, &status.dop);
+        else if (key == "headset_type" && android::base::ParseInt(value, &headsetType, 1, 3))
+            status.hifiMode = headsetType - 1;  // Kernel headset type is Hi-Fi mode + 1
+        else if (key == "zl")
+            android::base::ParseUint(value, &status.impedanceLeft);
+        else if (key == "zr")
+            android::base::ParseUint(value, &status.impedanceRight);
+        else if (key == "chip" && value != "unknown")
+            status.chip = value;
+    }
+
+    _hidl_cb(true, status);
+    return Void();
+}
+
 }  // namespace implementation
-}  // namespace V2_0
+}  // namespace V2_1
 }  // namespace control
 }  // namespace dac
 }  // namespace audio

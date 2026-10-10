@@ -1,0 +1,13 @@
+//Vmax
+
+package vendor.lge.hardware.audio.dac.control@2.1;
+
+import @2.0::IDacControl;
+
+interface IDacControl extends @2.0::IDacControl {
+    /**
+    * Returns the current output state, read from the driver without touching the chip.
+    * ok is false if the kernel does not expose it.
+    */
+    getOutputStatus() generates (bool ok, OutputStatus status);
+};

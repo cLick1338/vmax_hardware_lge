@@ -1,0 +1,40 @@
+//Vmax
+
+package vendor.lge.hardware.audio.dac.control@2.1;
+
+/**
+* Where the headphone jack is driven from, as reported by the ES9218P driver
+*/
+enum DacState : int32_t {
+    /** DAC powered off */
+    OFF,
+    /** DAC in low-power bypass; the codec drives the jack */
+    BYPASS,
+    /** DAC drives the jack and a stream is running */
+    HIFI,
+    /** DAC drives the jack, stream stopped; drops to BYPASS after about 3 s */
+    IDLE,
+};
+
+enum Impedance : uint32_t {
+    /** Nothing measured (unplugged) */
+    UNKNOWN = 0,
+    /** Open circuit: line out, amplifier or extension cable */
+    FLOATING = 0x0FFFFFFE,
+};
+
+struct OutputStatus {
+    DacState state;
+    /** DAC link format of the last stream, in Hz and bits; stale unless state is HIFI or IDLE */
+    uint32_t sampleRate;
+    uint32_t bitDepth;
+    /** 0 for PCM, 64 or 128 for DoP */
+    uint32_t dop;
+    /** Hi-Fi mode applied to the chip (HifiMode feature value), -1 if none yet */
+    int32_t hifiMode;
+    /** Measured at plug-in in ohms, or an Impedance value */
+    uint32_t impedanceLeft;
+    uint32_t impedanceRight;
+    /** Chip model, empty until the DAC has been powered once */
+    string chip;
+};

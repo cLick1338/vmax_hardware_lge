@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <vendor/lge/hardware/audio/dac/control/2.0/IDacControl.h>
+#include <vendor/lge/hardware/audio/dac/control/2.1/IDacControl.h>
 
 #include <android/hardware/audio/5.0/IDevice.h>
 #include <android/hardware/audio/5.0/IDevicesFactory.h>
@@ -35,7 +35,7 @@ namespace hardware {
 namespace audio {
 namespace dac {
 namespace control {
-namespace V2_0 {
+namespace V2_1 {
 namespace implementation {
 
 using ::android::hardware::hidl_string;
@@ -45,6 +45,7 @@ using ::android::hardware::Void;
 using ::vendor::lge::hardware::audio::dac::control::V2_0::Feature;
 using ::vendor::lge::hardware::audio::dac::control::V2_0::FeatureStates;
 using ::vendor::lge::hardware::audio::dac::control::V2_0::FeatureState;
+using ::vendor::lge::hardware::audio::dac::control::V2_0::KeyValue;
 
 enum AudioVersion { V5_0, V6_0 };
 
@@ -78,6 +79,8 @@ class DacControl : public IDacControl {
 
     Return<bool> resetCustomFilterCoeffs() override;
 
+    Return<void> getOutputStatus(getOutputStatus_cb _hidl_cb) override;
+
     std::map<Feature, FeatureStates> mSupportedStates;
     std::vector<Feature> mSupportedFeatures;
 
@@ -104,10 +107,11 @@ class DacControl : public IDacControl {
     std::string volumeRightPath;
     std::string essFilterPath;
     std::string customFilterPath;
+    std::string statusPath;
 };
 
 }  // namespace implementation
-}  // namespace V2_0
+}  // namespace V2_1
 }  // namespace control
 }  // namespace dac
 }  // namespace audio

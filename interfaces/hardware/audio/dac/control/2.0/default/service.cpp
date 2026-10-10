@@ -28,8 +28,8 @@ using android::status_t;
 using android::hardware::configureRpcThreadpool;
 using android::hardware::joinRpcThreadpool;
 
-using ::vendor::lge::hardware::audio::dac::control::V2_0::IDacControl;
-using ::vendor::lge::hardware::audio::dac::control::V2_0::implementation::DacControl;
+using ::vendor::lge::hardware::audio::dac::control::V2_1::IDacControl;
+using ::vendor::lge::hardware::audio::dac::control::V2_1::implementation::DacControl;
 
 int main() {
     sp<DacControl> interface;

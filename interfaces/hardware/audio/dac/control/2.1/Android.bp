@@ -1,0 +1,15 @@
+//Vmax
+
+hidl_interface {
+    name: "vendor.lge.hardware.audio.dac.control@2.1",
+    root: "vendor.lge",
+    srcs: [
+        "types.hal",
+        "IDacControl.hal",
+    ],
+    interfaces: [
+        "android.hidl.base@1.0",
+        "vendor.lge.hardware.audio.dac.control@2.0",
+    ],
+    gen_java: true,
+}
