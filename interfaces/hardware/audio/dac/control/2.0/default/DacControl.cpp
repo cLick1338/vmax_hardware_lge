@@ -465,8 +465,18 @@ Return<int32_t> DacControl::getFeatureValue(Feature feature) {
 
 // Custom filter implementation
 
+// The kernel's shape enum skips 5, so panel shapes 5 and 6 are stored as 6 and 7
+static int32_t customFilterShapeToKernel(int32_t shape) {
+    return shape <= 4 ? shape : shape + 1;
+}
+
 Return<int32_t> DacControl::getCustomFilterShape(void) {
-    return property_get_int32(PROPERTY_CUSTOM_FILTER_SHAPE, 0);
+    int32_t value = property_get_int32(PROPERTY_CUSTOM_FILTER_SHAPE, 0);
+    if (value >= 0 && value <= 4)
+        return value;
+    if (value == 6 || value == 7)
+        return value - 1;
+    return 0;  // Older builds re-added 1 on every boot and could store 8
 }
 
 Return<int32_t> DacControl::getCustomFilterSymmetry(void) {
@@ -484,7 +494,7 @@ std::string DacControl::parseUpdatedCustomFilterData() {
     * Let's build the actual string with the custom filter's shape, symmetry and 14 Stage 2 coefficients
     *
     */
-    filter_data.append(std::to_string(getCustomFilterShape())).append(",");
+    filter_data.append(std::to_string(customFilterShapeToKernel(getCustomFilterShape()))).append(",");
     filter_data.append(std::to_string(getCustomFilterSymmetry())).append(",");
     for (int i = 0; i < 14; i++) {
         filter_data.append(std::to_string(getCustomFilterCoeff(i)));
@@ -501,11 +511,13 @@ Return<bool> DacControl::setCustomFilterShape(int32_t shape) {
         return false;
     }
 
-    int rc;
-    if(shape <= 4)
-        rc = property_set(PROPERTY_CUSTOM_FILTER_SHAPE, std::to_string(shape).c_str());
-    else /* Filter 5 (counting from 0) is enumerated 6 on es9218.h, so anything after receives +1 as well */
-        rc = property_set(PROPERTY_CUSTOM_FILTER_SHAPE, std::to_string(shape + 1).c_str());
+    if (shape < 0 || shape > 6) {
+        LOG(ERROR) << "DacControl::setCustomFilterShape: invalid shape " << shape;
+        return false;
+    }
+
+    int rc = property_set(PROPERTY_CUSTOM_FILTER_SHAPE,
+                          std::to_string(customFilterShapeToKernel(shape)).c_str());
     if (rc) {
         LOG(ERROR) << "DacControl::setCustomFilterShape: failed to set property " << PROPERTY_CUSTOM_FILTER_SHAPE << " with error " << rc;
         return false;
