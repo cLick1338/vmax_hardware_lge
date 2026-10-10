@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="summary_empty" translatable="false"></string>
 
     <string name="quad_dac_app_name">Quad DAC Panel</string>
@@ -56,6 +56,33 @@
 
     <string name="avc_volume">AVC Volume</string>
     <string name="avc_volume_summary">Amplifies volume</string>
+
+    <!-- Output status -->
+    <string name="dac_status">Output status</string>
+    <string name="dac_status_output">Output</string>
+    <string name="dac_status_headphones">Headphones</string>
+    <string name="dac_status_source">Playing</string>
+    <string name="dac_status_unavailable">Not available</string>
+    <string name="dac_rate_khz"><xliff:g id="rate" example="44.1">%1$s</xliff:g> kHz</string>
+    <string name="dac_output_hifi">Hi-Fi DAC, <xliff:g id="rate" example="48 kHz">%1$s</xliff:g> / <xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
+    <string name="dac_output_hifi_dop">Hi-Fi DAC, DSD over PCM (DoP<xliff:g id="dop" example="64">%1$d</xliff:g>)</string>
+    <string name="dac_output_idle">Hi-Fi DAC, playback stopped</string>
+    <string name="dac_output_standby">Standby, switches to the Hi-Fi DAC when playback starts</string>
+    <string name="dac_output_bypass">Headphone codec, DAC bypassed</string>
+    <string name="dac_output_off">DAC powered off</string>
+    <string name="dac_impedance"><xliff:g id="ohms" example="32">%1$d</xliff:g> Ω</string>
+    <string name="dac_impedance_lr">L <xliff:g id="left" example="32">%1$d</xliff:g> Ω, R <xliff:g id="right" example="33">%2$d</xliff:g> Ω</string>
+    <string name="dac_impedance_lr_short"><xliff:g id="left" example="32">%1$d</xliff:g>/<xliff:g id="right" example="33">%2$d</xliff:g> Ω</string>
+    <string name="dac_impedance_uneven"><xliff:g id="impedance" example="L 20 Ω, R 147 Ω">%1$s</xliff:g>, uneven reading, replug the headphones</string>
+    <string name="dac_impedance_floating">Line out or external amplifier</string>
+    <string name="dac_impedance_unknown">Not measured</string>
+    <string name="dac_mode_suggestion"><xliff:g id="impedance" example="300 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="High Impedance">%2$s</xliff:g> mode suggested</string>
+    <string name="dac_source_none">Nothing playing</string>
+    <string name="dac_source_resampled"><xliff:g id="source" example="44.1 kHz">%1$s</xliff:g>, resampled to <xliff:g id="link" example="48 kHz">%2$s</xliff:g></string>
+    <string name="dac_tile_format"><xliff:g id="rate" example="48 kHz">%1$s</xliff:g>/<xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
+    <string name="dac_tile_dop">DoP</string>
+    <string name="dac_tile_standby">Standby</string>
+    <string name="dac_tile_subtitle"><xliff:g id="state" example="48 kHz/24-bit">%1$s</xliff:g> · <xliff:g id="impedance" example="32 Ω">%2$s</xliff:g></string>
 
 </resources>
 

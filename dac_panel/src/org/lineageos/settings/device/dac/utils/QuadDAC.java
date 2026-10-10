@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import vendor.lge.hardware.audio.dac.control.V2_0.Feature;
 import vendor.lge.hardware.audio.dac.control.V2_0.FeatureStates;
 import vendor.lge.hardware.audio.dac.control.V2_0.IDacControl;
+import vendor.lge.hardware.audio.dac.control.V2_1.OutputStatus;
 
 public class QuadDAC {
 
@@ -18,12 +19,15 @@ public class QuadDAC {
 
     private static IDacControl dac;
 
+    private static vendor.lge.hardware.audio.dac.control.V2_1.IDacControl dac21;
+
     private static ArrayList<Integer> dac_features;
 
     public static boolean dac_service_available = false;
 
     public static void initialize() throws RemoteException {
         dac = IDacControl.getService(true);
+        dac21 = vendor.lge.hardware.audio.dac.control.V2_1.IDacControl.castFrom(dac);
         dac_features = dac.getSupportedFeatures();
         dac_service_available = true;
     }
@@ -191,5 +195,18 @@ public class QuadDAC {
     public static void resetCustomFilterCoeffs() throws RemoteException
     {
         dac.resetCustomFilterCoeffs();
+    }
+
+    /* Null when the service or kernel predates the status call */
+    public static OutputStatus getOutputStatus() throws RemoteException
+    {
+        if (dac21 == null)
+            return null;
+        OutputStatus[] result = new OutputStatus[1];
+        dac21.getOutputStatus((ok, status) -> {
+            if (ok)
+                result[0] = status;
+        });
+        return result[0];
     }
 }

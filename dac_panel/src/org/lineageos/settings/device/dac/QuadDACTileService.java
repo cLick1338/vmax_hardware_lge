@@ -4,11 +4,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
+import android.os.Handler;
+import android.os.Looper;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.util.Log;
 
+import org.lineageos.settings.device.dac.utils.Constants;
+import org.lineageos.settings.device.dac.utils.DacStatus;
 import org.lineageos.settings.device.dac.utils.QuadDAC;
+
+import java.util.List;
 
 public class QuadDACTileService extends TileService {
 
@@ -17,6 +25,17 @@ public class QuadDACTileService extends TileService {
     private HeadsetPluggedTileReceiver headsetPluggedTileReceiver = new HeadsetPluggedTileReceiver();
 
     private QuadDAC DacControlInterface = new QuadDAC();
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable updateSubtitleRunnable = this::updateSubtitle;
+
+    private final AudioManager.AudioPlaybackCallback playbackCallback =
+            new AudioManager.AudioPlaybackCallback() {
+        @Override
+        public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
+            scheduleSubtitleUpdate();
+        }
+    };
 
     @Override
     public void onClick() {
@@ -28,6 +47,7 @@ public class QuadDACTileService extends TileService {
             } else {
                 DacControlInterface.enable();
                 setTileActive();
+                scheduleSubtitleUpdate();
             }
         } catch(Exception e) {}
     }
@@ -40,12 +60,38 @@ public class QuadDACTileService extends TileService {
         } catch(Exception e) {}
         IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         registerReceiver(headsetPluggedTileReceiver, filter);
+        getSystemService(AudioManager.class).registerAudioPlaybackCallback(playbackCallback, handler);
     }
 
     @Override
     public void onStopListening() {
         super.onStopListening();
         unregisterReceiver(headsetPluggedTileReceiver);
+        getSystemService(AudioManager.class).unregisterAudioPlaybackCallback(playbackCallback);
+        handler.removeCallbacks(updateSubtitleRunnable);
+    }
+
+    private void scheduleSubtitleUpdate() {
+        handler.removeCallbacks(updateSubtitleRunnable);
+        handler.postDelayed(updateSubtitleRunnable, Constants.STATUS_SETTLE_DELAY_MS);
+        handler.postDelayed(updateSubtitleRunnable, Constants.STATUS_STANDBY_DELAY_MS);
+    }
+
+    private String getSubtitle() {
+        try {
+            return DacStatus.tileSubtitle(this, DacControlInterface.getOutputStatus());
+        } catch(Exception e) {
+            return null;
+        }
+    }
+
+    private void updateSubtitle()
+    {
+        Tile quaddactile = getQsTile();
+        if (quaddactile == null || quaddactile.getState() != Tile.STATE_ACTIVE)
+            return;
+        quaddactile.setSubtitle(getSubtitle());
+        quaddactile.updateTile();
     }
 
     private void setTileActive()
@@ -53,6 +99,7 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_ACTIVE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_on));
+        quaddactile.setSubtitle(getSubtitle());
 	    quaddactile.updateTile();
     }
 
@@ -61,6 +108,7 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_INACTIVE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_off));
+        quaddactile.setSubtitle(null);
 	    quaddactile.updateTile();
     }
 
@@ -69,6 +117,7 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_UNAVAILABLE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_unavail));
+        quaddactile.setSubtitle(null);
 	    quaddactile.updateTile();
     }
 

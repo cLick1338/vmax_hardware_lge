@@ -16,6 +16,16 @@ public class Constants {
     public static final String HIFI_MODE_KEY = "hifi_mode_dropdown";
     public static final String AVC_VOLUME_KEY = "avc_volume_seekbar";
 
+    public static final String STATUS_CATEGORY_KEY = "dac_status";
+    public static final String STATUS_OUTPUT_KEY = "dac_status_output";
+    public static final String STATUS_HEADPHONES_KEY = "dac_status_headphones";
+    public static final String STATUS_SOURCE_KEY = "dac_status_source";
+
+    // Driver state lags playback events; re-read once it has settled and once after standby
+    public static final long STATUS_SETTLE_DELAY_MS = 500;
+    public static final long STATUS_STANDBY_DELAY_MS = 3500;
+    public static final long STATUS_POLL_MS = 1000;
+
     public static final String   CUSTOM_FILTER_SHAPE_KEY = "custom_filter_shape";
     public static final String   CUSTOM_FILTER_SYMMETRY_KEY = "custom_filter_symmetry";
     public static final String[] CUSTOM_FILTER_COEFF_KEYS = {

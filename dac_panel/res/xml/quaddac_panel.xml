@@ -12,6 +12,28 @@
         app:isPreferenceVisible="false" />
 
     <PreferenceCategory
+        app:key="dac_status"
+        app:title="@string/dac_status"
+        app:isPreferenceVisible="false" >
+
+        <Preference
+            app:key="dac_status_output"
+            app:title="@string/dac_status_output"
+            app:selectable="false" />
+
+        <Preference
+            app:key="dac_status_headphones"
+            app:title="@string/dac_status_headphones"
+            app:selectable="false" />
+
+        <Preference
+            app:key="dac_status_source"
+            app:title="@string/dac_status_source"
+            app:selectable="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:title="@string/quad_dac_settings" >
 
         <ListPreference

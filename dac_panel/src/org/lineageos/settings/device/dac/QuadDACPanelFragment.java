@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
@@ -22,13 +25,16 @@ import android.view.MenuItem;
 import org.lineageos.settings.device.dac.ui.BalancePreference;
 import org.lineageos.settings.device.dac.ui.ButtonPreference;
 import org.lineageos.settings.device.dac.utils.Constants;
+import org.lineageos.settings.device.dac.utils.DacStatus;
 import org.lineageos.settings.device.dac.utils.QuadDAC;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import vendor.lge.hardware.audio.dac.control.V2_0.Feature;
 import vendor.lge.hardware.audio.dac.control.V2_0.IDacControl;
 import vendor.lge.hardware.audio.dac.control.V2_0.Range;
+import vendor.lge.hardware.audio.dac.control.V2_1.OutputStatus;
 
 public class QuadDACPanelFragment extends PreferenceFragment
         implements OnPreferenceChangeListener {
@@ -52,6 +58,20 @@ public class QuadDACPanelFragment extends PreferenceFragment
 
     /* Button to reset custom filter's coefficients, if needed. */
     private ButtonPreference custom_filter_reset_coeffs_button;
+
+    private PreferenceCategory status_category;
+    private Preference status_output, status_headphones, status_source;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable updateStatusRunnable = this::updateStatus;
+
+    private final AudioManager.AudioPlaybackCallback playbackCallback =
+            new AudioManager.AudioPlaybackCallback() {
+        @Override
+        public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
+            scheduleStatusUpdate();
+        }
+    };
 
     private HeadsetPluggedFragmentReceiver headsetPluggedFragmentReceiver;
 
@@ -84,12 +104,12 @@ public class QuadDACPanelFragment extends PreferenceFragment
                 if (set_dac_on) {
                     DacControlInterface.enable();
                     enableExtraSettings();
-                    return true;
                 } else {
                     DacControlInterface.disable();
                     disableExtraSettings();
-                    return true;
                 }
+                scheduleStatusUpdate();
+                return true;
             }
             if (preference instanceof ListPreference) {
                 if (preference.getKey().equals(Constants.HIFI_MODE_KEY)) {
@@ -97,6 +117,7 @@ public class QuadDACPanelFragment extends PreferenceFragment
 
                     int mode = lp.findIndexOfValue((String) newValue);
                     DacControlInterface.setDACMode(mode);
+                    scheduleStatusUpdate();
                     return true;
 
                 } else if (preference.getKey().equals(Constants.DIGITAL_FILTER_KEY)) {
@@ -179,13 +200,44 @@ public class QuadDACPanelFragment extends PreferenceFragment
     public void onResume() {
         IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         getActivity().registerReceiver(headsetPluggedFragmentReceiver, filter);
+        getContext().getSystemService(AudioManager.class)
+                .registerAudioPlaybackCallback(playbackCallback, handler);
+        updateStatus();
         super.onResume();
     }
 
     @Override
     public void onPause() {
         getActivity().unregisterReceiver(headsetPluggedFragmentReceiver);
+        getContext().getSystemService(AudioManager.class)
+                .unregisterAudioPlaybackCallback(playbackCallback);
+        handler.removeCallbacks(updateStatusRunnable);
         super.onPause();
+    }
+
+    private void scheduleStatusUpdate() {
+        handler.removeCallbacks(updateStatusRunnable);
+        handler.postDelayed(updateStatusRunnable, Constants.STATUS_SETTLE_DELAY_MS);
+        handler.postDelayed(updateStatusRunnable, Constants.STATUS_STANDBY_DELAY_MS);
+    }
+
+    private void updateStatus() {
+        if (status_category == null || !status_category.isVisible())
+            return;
+        try {
+            OutputStatus status = DacControlInterface.getOutputStatus();
+            status_output.setSummary(
+                    DacStatus.output(getContext(), status, DacControlInterface.isEnabled()));
+            status_headphones.setSummary(
+                    DacStatus.headphones(getContext(), status, DacControlInterface.getDACMode()));
+            status_source.setSummary(DacStatus.source(getContext(), status));
+            if (DacStatus.isSettling(status)) {
+                handler.removeCallbacks(updateStatusRunnable);
+                handler.postDelayed(updateStatusRunnable, Constants.STATUS_POLL_MS);
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "updateStatus: " + e.toString());
+        }
     }
 
     @Override
@@ -226,7 +278,15 @@ public class QuadDACPanelFragment extends PreferenceFragment
 
         balance_preference = (BalancePreference) findPreference(Constants.BALANCE_KEY);
 
+        status_category = (PreferenceCategory) findPreference(Constants.STATUS_CATEGORY_KEY);
+        status_output = findPreference(Constants.STATUS_OUTPUT_KEY);
+        status_headphones = findPreference(Constants.STATUS_HEADPHONES_KEY);
+        status_source = findPreference(Constants.STATUS_SOURCE_KEY);
+
         try {
+            if (DacControlInterface.getOutputStatus() != null) {
+                status_category.setVisible(true);
+            }
             if (DacControlInterface.getSupportedFeatures().contains(Feature.QuadDAC)) {
                 quaddac_switch.setVisible(true);
             }
@@ -383,6 +443,7 @@ public class QuadDACPanelFragment extends PreferenceFragment
                         break;
                     default: break;
                 }
+                scheduleStatusUpdate();
             }
         }
     }
