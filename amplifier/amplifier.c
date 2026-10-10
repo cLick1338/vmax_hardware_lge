@@ -171,6 +171,64 @@ static int lge_amplifier_set_feedback(amplifier_device_t* device, void* adev, ui
 #endif  // SUPPORT_EXT_AMPLIFIER
 
 #ifdef SUPPORT_HIFI_QUAD_DAC
+#ifdef HIFI_DAC_SAMPLE_RATE_CTL
+// Values of the machine driver's MI2S SampleRate enum
+static const struct {
+    unsigned int rate;
+    const char* name;
+} hifi_dac_rates[] = {
+        {44100, "KHZ_44P1"},   {48000, "KHZ_48"},  {88200, "KHZ_88P2"}, {96000, "KHZ_96"},
+        {176400, "KHZ_176P4"}, {192000, "KHZ_192"}, {384000, "KHZ_384"},
+};
+
+/*
+ * The HAL computes the backend format for headphones but, not knowing HIFI_DAC_BACKEND, writes it
+ * to the default backend's controls. Copy it to the DAC link before the backend starts.
+ */
+static void lge_amplifier_set_hifi_dac_format(lge_amplifier_device_t* lge_amplifier) {
+    struct audio_backend_cfg cfg = {0};
+    struct mixer_ctl* ctl;
+    const char* rate = "KHZ_48";
+    const char* format = "S16_LE";
+    size_t i;
+
+    platform_get_codec_backend_cfg(lge_amplifier->adev, SND_DEVICE_OUT_HEADPHONES, &cfg);
+    for (i = 0; i < ARRAY_SIZE(hifi_dac_rates); i++) {
+        if (hifi_dac_rates[i].rate == cfg.sample_rate) {
+            rate = hifi_dac_rates[i].name;
+            break;
+        }
+    }
+    if (cfg.bit_width >= 32)
+        format = "S32_LE";
+    else if (cfg.bit_width >= 24)
+        format = "S24_LE";
+
+    ALOGD("%s: backend %u Hz/%u bit, DAC link %s/%s", __func__, cfg.sample_rate, cfg.bit_width,
+          rate, format);
+
+    ctl = mixer_get_ctl_by_name(lge_amplifier->adev->mixer, HIFI_DAC_SAMPLE_RATE_CTL);
+    if (!ctl || mixer_ctl_set_enum_by_string(ctl, rate) < 0)
+        ALOGE("%s: failed to set %s to %s", __func__, HIFI_DAC_SAMPLE_RATE_CTL, rate);
+    ctl = mixer_get_ctl_by_name(lge_amplifier->adev->mixer, HIFI_DAC_FORMAT_CTL);
+    if (!ctl || mixer_ctl_set_enum_by_string(ctl, format) < 0)
+        ALOGE("%s: failed to set %s to %s", __func__, HIFI_DAC_FORMAT_CTL, format);
+}
+#endif  // HIFI_DAC_SAMPLE_RATE_CTL
+
+// Runs in enable_snd_device(), after the HAL has settled the backend format
+static int lge_amplifier_enable_output_devices(struct amplifier_device* device, uint32_t devices,
+                                               bool enable) {
+    lge_amplifier_device_t* lge_amplifier = (lge_amplifier_device_t*)device;
+
+#ifdef HIFI_DAC_SAMPLE_RATE_CTL
+    if (enable && devices == SND_DEVICE_OUT_HEADPHONES && lge_amplifier->hifi_dac_enabled &&
+        lge_amplifier->adev)
+        lge_amplifier_set_hifi_dac_format(lge_amplifier);
+#endif
+    return 0;
+}
+
 static int lge_amplifier_set_output_devices(struct amplifier_device* device, uint32_t devices) {
     lge_amplifier_device_t* lge_amplifier = (lge_amplifier_device_t*)device;
     bool want_to_enable_hifi_dac = property_get_bool("persist.vendor.audio.hifi.enabled", false);
@@ -358,6 +416,7 @@ static int lge_amplifier_module_open(const hw_module_t* module, const char* name
 
 #ifdef SUPPORT_HIFI_QUAD_DAC
     lge_amplifier->amp_dev.set_output_devices = lge_amplifier_set_output_devices;
+    lge_amplifier->amp_dev.enable_output_devices = lge_amplifier_enable_output_devices;
     lge_amplifier->amp_dev.set_parameters = lge_amplifier_set_parameters;
 #endif
 #ifdef SUPPORT_EXT_AMPLIFIER
