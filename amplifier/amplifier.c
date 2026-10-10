@@ -251,10 +251,12 @@ static int lge_amplifier_set_parameters(struct amplifier_device* device, struct 
     }
 
     // Add parameters to enable/disable the Hi-Fi Quad DAC feature
-    err = str_parms_get_str(parms, "hifi_dac", value, sizeof(value));
+    err = str_parms_get_str(parms, "hifi_dac", value, len);
     if (err >= 0) {
+        // Compare with the requested state; hifi_dac_enabled only follows on the next routing
+        bool requested = property_get_bool("persist.vendor.audio.hifi.enabled", false);
         if (!strncmp(value, "on", 2)) {
-            if (lge_amplifier->hifi_dac_enabled) {
+            if (requested) {
                 ALOGD("%s: already enabled!", __func__);
                 ret = -EINVAL;
                 goto done;
@@ -262,7 +264,7 @@ static int lge_amplifier_set_parameters(struct amplifier_device* device, struct 
             ALOGD("%s: enabling Hi-Fi Quad DAC.", __func__);
             property_set("persist.vendor.audio.hifi.enabled", "true");
         } else if (!strncmp(value, "off", 3)) {
-            if (!lge_amplifier->hifi_dac_enabled) {
+            if (!requested) {
                 ALOGD("%s: already disabled!", __func__);
                 ret = -EINVAL;
                 goto done;
