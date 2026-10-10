@@ -19,12 +19,10 @@ static constexpr const char* kDefaultPath = "/data/vendor/display/default_screen
 
 const std::map<int32_t, std::string> DisplayModes::kModeMap = {
     // clang-format off
-    {0, "Auto"},
-    {1, "Cinema"},
-    {2, "Photos"},
-    {3, "Web"},
-    {4, "Sports"},
-    {5, "Game"},
+    {0, "Native"},
+    {1, "DCI-P3"},
+    {2, "Adobe RGB"},
+    {3, "sRGB"},
     // clang-format on
 };
 
