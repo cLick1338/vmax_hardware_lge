@@ -62,7 +62,10 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
                               std::vector<audio_io_handle_t>* secondaryOutputs,
                               output_type_t* outputType, bool* isSpatialized, bool* isBitPerfect,
                               float* volume, bool* muted) override {
-        if (wantsHiFiDirect(attr, session, config, *flags, *selectedDeviceIds)) {
+        const audio_config_base_t base = {.sample_rate = config->sample_rate,
+                                          .channel_mask = config->channel_mask,
+                                          .format = config->format};
+        if (wantsHiFiDirect(attr, session, base, *flags, *selectedDeviceIds)) {
             ALOGI("%s: direct output for session %d, %u Hz, format %#x", __func__, session,
                   config->sample_rate, config->format);
             *flags = AUDIO_OUTPUT_FLAG_DIRECT;
@@ -70,6 +73,17 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
         return AudioPolicyManager::getOutputForAttr(
                 attr, output, session, stream, attributionSource, config, flags, selectedDeviceIds,
                 portId, secondaryOutputs, outputType, isSpatialized, isBitPerfect, volume, muted);
+    }
+
+    status_t setDeviceConnectionState(audio_policy_dev_state_t state,
+                                      const android::media::audio::common::AudioPort& port,
+                                      audio_format_t encodedFormat) override {
+        const status_t status =
+                AudioPolicyManager::setDeviceConnectionState(state, port, encodedFormat);
+        // A track restored after an audioserver restart can come back before the headset does
+        if (status == NO_ERROR && state == AUDIO_POLICY_DEVICE_STATE_AVAILABLE)
+            moveMusicToHiFiDirect("headset connected");
+        return status;
     }
 
     // Music volume: AudioService's stream index is already in units; everything else (ranges,
@@ -84,6 +98,7 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
 
     status_t setStreamVolumeIndex(audio_stream_type_t stream, int index, bool muted,
                                   audio_devices_t device) override {
+        checkHiFiDacToggle();
         if (!isFineMusicGroup(mEngine->getVolumeGroupForStreamType(stream)))
             return AudioPolicyManager::setStreamVolumeIndex(stream, index, muted, device);
         if (stream != AUDIO_STREAM_MUSIC) index *= kMusicUnitsPerStep;
@@ -104,6 +119,7 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
 
     status_t setVolumeIndexForAttributes(const audio_attributes_t& attr, int index, bool muted,
                                          audio_devices_t device) override {
+        checkHiFiDacToggle();
         if (isFineMusicGroup(mEngine->getVolumeGroupForAttributes(attr)))
             index *= kMusicUnitsPerStep;
         return AudioPolicyManager::setVolumeIndexForAttributes(attr, index, muted, device);
@@ -150,6 +166,44 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
 
   private:
     const bool mFineMusicVolume = property_get_bool(kFineMusicVolumeProp, false);
+    bool mHiFiDacEnabled = property_get_bool(kHiFiDacEnabledProp, false);
+    audio_port_handle_t mMovedPortId = AUDIO_PORT_HANDLE_NONE;
+
+    // AudioService re-sends the music volume when the DAC is switched (onHifiDacPropertyChanged)
+    void checkHiFiDacToggle() {
+        const bool enabled = property_get_bool(kHiFiDacEnabledProp, false);
+        if (enabled == mHiFiDacEnabled) return;
+        mHiFiDacEnabled = enabled;
+        // Switching off leaves direct tracks alone: the HAL moves them, DoP included
+        if (enabled) moveMusicToHiFiDirect("DAC switched on");
+    }
+
+    // Music already on a mixer stays there until its next track; restart one that would now get
+    // the direct output. One at a time: the direct output can't be shared
+    void moveMusicToHiFiDirect(const char* reason) {
+        sp<TrackClientDescriptor> candidate;
+        for (size_t i = 0; i < mOutputs.size(); i++) {
+            const sp<SwAudioOutputDescriptor> desc = mOutputs.valueAt(i);
+            if ((desc->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) != 0) continue;
+            for (const sp<TrackClientDescriptor>& client : desc->getClientIterable()) {
+                // Already restarting (the headset's mic connects right after its output)
+                if (client->portId() == mMovedPortId) continue;
+                if (candidate != nullptr && (candidate->active() || !client->active())) continue;
+                DeviceIdVector deviceIds;
+                if (client->preferredDeviceId() != AUDIO_PORT_HANDLE_NONE)
+                    deviceIds.push_back(client->preferredDeviceId());
+                const audio_attributes_t attr = client->attributes();
+                if (wantsHiFiDirect(&attr, client->session(), client->config(), client->flags(),
+                                    deviceIds))
+                    candidate = client;
+            }
+        }
+        if (candidate == nullptr) return;
+        ALOGI("%s: %s, restarting session %d on the direct output", __func__, reason,
+              candidate->session());
+        mMovedPortId = candidate->portId();
+        mpClientInterface->invalidateTracks({mMovedPortId});
+    }
 
     bool isFineMusicGroup(volume_group_t group) const {
         return mFineMusicVolume && group != VOLUME_GROUP_NONE &&
@@ -162,7 +216,7 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
     }
 
     bool wantsHiFiDirect(const audio_attributes_t* attr, audio_session_t session,
-                         const audio_config_t* config, audio_output_flags_t flags,
+                         const audio_config_base_t& config, audio_output_flags_t flags,
                          const DeviceIdVector& selectedDeviceIds) {
         // Plain music only: FAST, offload, HW A/V sync etc. keep their own paths. Some players
         // (Poweramp) ask for DIRECT|DEEP_BUFFER, which no direct profile matches as is
@@ -173,8 +227,8 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
             attr->content_type != AUDIO_CONTENT_TYPE_MUSIC ||
             (attr->flags & (AUDIO_FLAG_HW_AV_SYNC | AUDIO_FLAG_LOW_LATENCY)) != 0)
             return false;
-        if (!isHiFiFormat(config->format) || !isHiFiRate(config->sample_rate) ||
-            config->channel_mask != AUDIO_CHANNEL_OUT_STEREO)
+        if (!isHiFiFormat(config.format) || !isHiFiRate(config.sample_rate) ||
+            config.channel_mask != AUDIO_CHANNEL_OUT_STEREO)
             return false;
         if (!property_get_bool(kHiFiDacEnabledProp, false) ||
             mEngine->getPhoneState() != AUDIO_MODE_NORMAL)
@@ -191,7 +245,7 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
             return false;
 
         const sp<IOProfile> profile = getProfileForOutput(
-                devices, config->sample_rate, config->format, config->channel_mask,
+                devices, config.sample_rate, config.format, config.channel_mask,
                 AUDIO_OUTPUT_FLAG_DIRECT, true /*directOnly*/);
         if (profile == nullptr) return false;
         // The direct output can't be shared: leave it to a player that is already using it
