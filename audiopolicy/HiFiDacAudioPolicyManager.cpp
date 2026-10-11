@@ -44,6 +44,18 @@ bool isHiFiFormat(audio_format_t format) {
     }
 }
 
+// The primary mixer runs at 48 kHz and writes 16-bit
+bool mixerWouldChange(const audio_config_base_t& config) {
+    switch (config.format) {
+        case AUDIO_FORMAT_PCM_24_BIT_PACKED:
+        case AUDIO_FORMAT_PCM_8_24_BIT:
+        case AUDIO_FORMAT_PCM_32_BIT:
+            return true;
+        default:
+            return config.sample_rate != 48000;
+    }
+}
+
 }  // namespace
 
 /*
@@ -218,18 +230,24 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
     bool wantsHiFiDirect(const audio_attributes_t* attr, audio_session_t session,
                          const audio_config_base_t& config, audio_output_flags_t flags,
                          const DeviceIdVector& selectedDeviceIds) {
-        // Plain music only: FAST, offload, HW A/V sync etc. keep their own paths. Some players
+        // Plain music only: offload, HW A/V sync etc. keep their own paths. Some players
         // (Poweramp) ask for DIRECT|DEEP_BUFFER, which no direct profile matches as is
         if (attr == nullptr ||
-            (flags & ~(AUDIO_OUTPUT_FLAG_DIRECT | AUDIO_OUTPUT_FLAG_DEEP_BUFFER)) != 0 ||
+            (flags & ~(AUDIO_OUTPUT_FLAG_DIRECT | AUDIO_OUTPUT_FLAG_DEEP_BUFFER |
+                       AUDIO_OUTPUT_FLAG_FAST | AUDIO_OUTPUT_FLAG_RAW)) != 0 ||
             (attr->usage != AUDIO_USAGE_MEDIA && attr->usage != AUDIO_USAGE_UNKNOWN) ||
             // UNKNOWN is SoundPool's default (game and app sound effects)
             attr->content_type != AUDIO_CONTENT_TYPE_MUSIC ||
-            (attr->flags & (AUDIO_FLAG_HW_AV_SYNC | AUDIO_FLAG_LOW_LATENCY)) != 0)
+            (attr->flags & AUDIO_FLAG_HW_AV_SYNC) != 0)
             return false;
         if (!isHiFiFormat(config.format) || !isHiFiRate(config.sample_rate) ||
             config.channel_mask != AUDIO_CHANNEL_OUT_STEREO)
             return false;
+        // AAudio low latency (FAST, LOW_LATENCY) is also what games ask for (Oboe defaults to
+        // media/music): only take it off the FAST mixer when the mixer would change the content
+        const bool lowLatency = (flags & (AUDIO_OUTPUT_FLAG_FAST | AUDIO_OUTPUT_FLAG_RAW)) != 0 ||
+                                (attr->flags & AUDIO_FLAG_LOW_LATENCY) != 0;
+        if (lowLatency && !mixerWouldChange(config)) return false;
         if (!property_get_bool(kHiFiDacEnabledProp, false) ||
             mEngine->getPhoneState() != AUDIO_MODE_NORMAL)
             return false;
