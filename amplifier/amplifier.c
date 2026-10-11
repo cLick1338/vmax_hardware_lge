@@ -245,7 +245,8 @@ static int lge_amplifier_set_output_devices(struct amplifier_device* device, uin
     }
 
     ALOGD("%s: Current device: %u\n", __func__, devices);
-    if (devices != SND_DEVICE_OUT_HEADPHONES) {
+    // The HAL picks the DoP device instead of headphones while a DoP stream plays on the DAC
+    if (devices != SND_DEVICE_OUT_HEADPHONES && devices != SND_DEVICE_OUT_HEADPHONES_DOP) {
         ALOGD("%s: not a Hi-Fi DAC scenario.", __func__);
         return 0;
     }
