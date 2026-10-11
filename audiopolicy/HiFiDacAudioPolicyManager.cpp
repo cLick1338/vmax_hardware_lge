@@ -230,10 +230,12 @@ class HiFiDacAudioPolicyManager : public AudioPolicyManager {
     bool wantsHiFiDirect(const audio_attributes_t* attr, audio_session_t session,
                          const audio_config_base_t& config, audio_output_flags_t flags,
                          const DeviceIdVector& selectedDeviceIds) {
-        // Plain music only: offload, HW A/V sync etc. keep their own paths. Some players
-        // (Poweramp) ask for DIRECT|DEEP_BUFFER, which no direct profile matches as is
+        // Plain music only: offload, HW A/V sync etc. keep their own paths. Some players ask for
+        // DIRECT|DEEP_BUFFER (Poweramp), DIRECT|DIRECT_PCM or DIRECT|BIT_PERFECT (UAPP), which no
+        // direct profile matches as is
         if (attr == nullptr ||
-            (flags & ~(AUDIO_OUTPUT_FLAG_DIRECT | AUDIO_OUTPUT_FLAG_DEEP_BUFFER |
+            (flags & ~(AUDIO_OUTPUT_FLAG_DIRECT | AUDIO_OUTPUT_FLAG_DIRECT_PCM |
+                       AUDIO_OUTPUT_FLAG_BIT_PERFECT | AUDIO_OUTPUT_FLAG_DEEP_BUFFER |
                        AUDIO_OUTPUT_FLAG_FAST | AUDIO_OUTPUT_FLAG_RAW)) != 0 ||
             (attr->usage != AUDIO_USAGE_MEDIA && attr->usage != AUDIO_USAGE_UNKNOWN) ||
             // UNKNOWN is SoundPool's default (game and app sound effects)
