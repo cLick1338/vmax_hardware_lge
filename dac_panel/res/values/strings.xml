@@ -48,15 +48,15 @@
     <string name="customizable_filter_coeffs">Customizable Filter Coefficients</string>
     <string name="customizable_filter_coeffs_summary">NOTE: If all coefficients are 0, audio will be muted</string>
 
-    <string name="hifi_mode">Output mode</string>
+    <string name="output_mode">Output mode</string>
 
-    <string name="hifi_mode_auto">Auto</string>
-    <string name="hifi_mode_normal">Low impedance</string>
-    <string name="hifi_mode_him">High impedance</string>
-    <string name="hifi_mode_aux-him">AUX/Line out</string>
+    <string name="output_mode_auto">Auto</string>
+    <string name="output_mode_low_impedance">Low impedance</string>
+    <string name="output_mode_high_impedance">High impedance</string>
+    <string name="output_mode_line_out">AUX/Line out</string>
 
-    <string name="avc_volume">Analog Volume Control</string>
-    <string name="avc_volume_summary">Adjust if hissing or too quiet</string>
+    <string name="analog_volume_control">Analog Volume Control</string>
+    <string name="analog_volume_control_summary">Adjust if hissing or too quiet</string>
     <string name="decibel_value"><xliff:g id="value" example="-14">%1$d</xliff:g> dB</string>
 
     <string name="media_volume_steps">Digital volume steps</string>

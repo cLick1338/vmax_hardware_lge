@@ -26,7 +26,7 @@
 
         <ListPreference
             app:key="hifi_mode_dropdown"
-            app:title="@string/hifi_mode"
+            app:title="@string/output_mode"
             app:summary="%s"
             app:entries="@array/hifi_mode_choices"
             app:entryValues="@array/hifi_mode_choice_values"
@@ -34,8 +34,8 @@
 
         <org.lineageos.settings.device.dac.ui.DecibelSeekBarPreference
             app:key="avc_volume_seekbar"
-            app:title="@string/avc_volume"
-            app:summary="@string/avc_volume_summary"
+            app:title="@string/analog_volume_control"
+            app:summary="@string/analog_volume_control_summary"
             app:showSeekBarValue="true"
             app:min="-24"
             android:max="0"

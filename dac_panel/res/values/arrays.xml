@@ -17,16 +17,16 @@
     </string-array>
 
     <string-array name="hifi_mode_entry_values" translatable="false">
-        <item>@string/hifi_mode_normal</item>
-        <item>@string/hifi_mode_him</item>
-        <item>@string/hifi_mode_aux-him</item>
+        <item>@string/output_mode_low_impedance</item>
+        <item>@string/output_mode_high_impedance</item>
+        <item>@string/output_mode_line_out</item>
     </string-array>
 
     <string-array name="hifi_mode_choices" translatable="false">
-        <item>@string/hifi_mode_auto</item>
-        <item>@string/hifi_mode_normal</item>
-        <item>@string/hifi_mode_him</item>
-        <item>@string/hifi_mode_aux-him</item>
+        <item>@string/output_mode_auto</item>
+        <item>@string/output_mode_low_impedance</item>
+        <item>@string/output_mode_high_impedance</item>
+        <item>@string/output_mode_line_out</item>
     </string-array>
 
     <string-array name="hifi_mode_choice_values" translatable="false">
