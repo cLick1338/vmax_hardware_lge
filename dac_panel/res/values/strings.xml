@@ -70,6 +70,7 @@
     <string name="dac_status_unavailable">Not available</string>
     <string name="dac_rate_khz"><xliff:g id="rate" example="44.1">%1$s</xliff:g> kHz</string>
     <string name="dac_output_hifi">Hi-Fi DAC, <xliff:g id="rate" example="48 kHz">%1$s</xliff:g> / <xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
+    <string name="dac_output_hifi_osf_bypass">Hi-Fi DAC, <xliff:g id="rate" example="384 kHz">%1$s</xliff:g> / <xliff:g id="bits" example="24">%2$d</xliff:g>-bit, OSF bypass</string>
     <string name="dac_output_hifi_dop">Hi-Fi DAC, DSD over PCM (DoP<xliff:g id="dop" example="64">%1$d</xliff:g>)</string>
     <string name="dac_output_idle">Hi-Fi DAC, playback stopped</string>
     <string name="dac_output_standby">Standby, switches to the Hi-Fi DAC when playback starts</string>
@@ -85,7 +86,7 @@
     <string name="dac_mode_auto"><xliff:g id="impedance" example="32 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="Low impedance">%2$s</xliff:g> mode</string>
     <string name="dac_mode_auto_pending"><xliff:g id="impedance" example="300 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="High impedance">%2$s</xliff:g> mode from next playback</string>
     <string name="dac_tile_format"><xliff:g id="rate" example="48 kHz">%1$s</xliff:g>/<xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
-    <string name="dac_tile_dop">DoP</string>
+    <string name="dac_tile_dop">DoP<xliff:g id="dop" example="64">%1$d</xliff:g></string>
     <string name="dac_tile_standby">Standby</string>
     <string name="dac_tile_powered_off">Powered off</string>
     <string name="dac_tile_off">Off</string>

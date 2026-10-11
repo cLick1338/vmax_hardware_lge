@@ -30,6 +30,8 @@ struct OutputStatus {
     uint32_t bitDepth;
     /** 0 for PCM, 64 or 128 for DoP */
     uint32_t dop;
+    /** PCM above 192 kHz: the DAC's oversampling filter is bypassed (the player oversampled) */
+    bool osfBypass;
     /** Hi-Fi mode applied to the chip (HifiMode feature value), -1 if none yet */
     int32_t hifiMode;
     /** Measured at plug-in in ohms, or an Impedance value */

@@ -626,6 +626,8 @@ Return<void> DacControl::getOutputStatus(getOutputStatus_cb _hidl_cb) {
             android::base::ParseUint(value, &status.bitDepth);
         else if (key == "dop")
             android::base::ParseUint(value, &status.dop);
+        else if (key == "osf_bypass")
+            status.osfBypass = value == "1";
         else if (key == "headset_type" && android::base::ParseInt(value, &headsetType, 1, 3))
             status.hifiMode = headsetType - 1;  // Kernel headset type is Hi-Fi mode + 1
         else if (key == "zl")

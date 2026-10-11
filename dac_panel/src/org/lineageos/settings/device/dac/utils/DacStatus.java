@@ -63,7 +63,8 @@ public final class DacStatus {
             case DacState.HIFI:
                 if (status.dop > 0)
                     return context.getString(R.string.dac_output_hifi_dop, status.dop);
-                return context.getString(R.string.dac_output_hifi,
+                return context.getString(status.osfBypass ? R.string.dac_output_hifi_osf_bypass
+                        : R.string.dac_output_hifi,
                         formatRate(context, status.sampleRate), status.bitDepth);
             case DacState.IDLE:
                 return context.getString(R.string.dac_output_idle);
@@ -115,7 +116,7 @@ public final class DacStatus {
         String state;
         switch (status.state) {
             case DacState.HIFI:
-                state = status.dop > 0 ? context.getString(R.string.dac_tile_dop)
+                state = status.dop > 0 ? context.getString(R.string.dac_tile_dop, status.dop)
                         : context.getString(R.string.dac_tile_format,
                                 formatRate(context, status.sampleRate), status.bitDepth);
                 break;
