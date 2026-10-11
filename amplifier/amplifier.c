@@ -9,7 +9,9 @@
 #define LOG_NDEBUG 0
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include <cutils/log.h>
@@ -171,6 +173,67 @@ static int lge_amplifier_set_feedback(amplifier_device_t* device, void* adev, ui
 #endif  // SUPPORT_EXT_AMPLIFIER
 
 #ifdef SUPPORT_HIFI_QUAD_DAC
+#define ESS_SYSFS_PATH "/sys/kernel/es9218_dac/"
+#define HIFI_MODE_AUTO 3
+#define IMPEDANCE_FLOATING 0x0FFFFFFE
+
+// Same thresholds as the DAC panel's suggestion; -1 when the reading is unusable
+static int lge_amplifier_mode_for_load(unsigned int zl, unsigned int zr) {
+    unsigned int low = zl < zr ? zl : zr;
+    unsigned int high = zl < zr ? zr : zl;
+
+    if (zl == IMPEDANCE_FLOATING || zr == IMPEDANCE_FLOATING) return 2;
+    // Nothing measured, or the plug moved during the measurement
+    if (high == 0 || high > 2 * low) return -1;
+    if (high > 420) return 2;
+    if (high >= 47) return 1;
+    return 0;
+}
+
+// Auto mode: pick the amp mode from the measured impedance before the DAC powers up
+static void lge_amplifier_apply_auto_hifi_mode(void) {
+    char line[64], state[16] = "";
+    unsigned int zl = 0, zr = 0;
+    int mode;
+    FILE* file;
+
+    if (property_get_int32("persist.vendor.audio.ess.mode", HIFI_MODE_AUTO) != HIFI_MODE_AUTO)
+        return;
+
+    file = fopen(ESS_SYSFS_PATH "status", "r");
+    if (!file) {
+        ALOGE("%s: cannot read the DAC status", __func__);
+        return;
+    }
+    while (fgets(line, sizeof(line), file)) {
+        sscanf(line, "state=%15s", state);
+        sscanf(line, "zl=%u", &zl);
+        sscanf(line, "zr=%u", &zr);
+    }
+    fclose(file);
+
+    // Changing the mode while powered cycles the amp (audible); wait for the next start
+    if (strcmp(state, "CLOSE") && strcmp(state, "OPEN") && strcmp(state, "BYPASS")) {
+        ALOGD("%s: DAC is %s, keeping the current mode", __func__, state);
+        return;
+    }
+
+    mode = lge_amplifier_mode_for_load(zl, zr);
+    if (mode < 0) {
+        ALOGD("%s: unusable impedance L %u R %u, keeping the current mode", __func__, zl, zr);
+        return;
+    }
+
+    file = fopen(ESS_SYSFS_PATH "headset_type", "w");
+    if (!file) {
+        ALOGE("%s: cannot set the Hi-Fi mode", __func__);
+        return;
+    }
+    fprintf(file, "%d", mode);
+    fclose(file);
+    ALOGD("%s: L %u R %u ohms -> mode %d", __func__, zl, zr, mode);
+}
+
 static int lge_amplifier_set_output_devices(struct amplifier_device* device, uint32_t devices) {
     lge_amplifier_device_t* lge_amplifier = (lge_amplifier_device_t*)device;
     bool want_to_enable_hifi_dac = property_get_bool("persist.vendor.audio.hifi.enabled", false);
@@ -186,6 +249,8 @@ static int lge_amplifier_set_output_devices(struct amplifier_device* device, uin
         ALOGD("%s: not a Hi-Fi DAC scenario.", __func__);
         return 0;
     }
+
+    if (want_to_enable_hifi_dac) lge_amplifier_apply_auto_hifi_mode();
 
     /*
      * The flag above is only set when the switch originates from our own

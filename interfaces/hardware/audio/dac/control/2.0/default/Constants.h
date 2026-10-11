@@ -57,7 +57,8 @@ extern std::vector<std::string> PROPERTY_CUSTOM_FILTER_COEFFS;
 
 /* Defaults */
 #define AVC_VOLUME_DEFAULT                 -14
-#define HIFI_MODE_DEFAULT                  0
+#define HIFI_MODE_AUTO                     3  // picked by the audio HAL from the impedance
+#define HIFI_MODE_DEFAULT                  HIFI_MODE_AUTO
 
 /* Hal Commands */
 #define DAC_COMMAND                         "hifi_dac"

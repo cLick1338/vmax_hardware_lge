@@ -55,9 +55,10 @@ static std::vector<KeyValue> digital_filters = {{"Short", "0"},
                                                 {"Sharp", "1"},
                                                 {"Slow", "2"}};
 
-static std::vector<KeyValue> hifi_modes = {{"Normal", "0"},
-                                           {"High Impedance", "1"},
-                                           {"AUX High Impedance", "2"}};
+static std::vector<KeyValue> hifi_modes = {{"Auto", "3"},
+                                           {"Low impedance", "0"},
+                                           {"High impedance", "1"},
+                                           {"AUX/Line out", "2"}};
 
 /*
  * Write value to path and close file. Returns false if the write failed.
@@ -285,7 +286,16 @@ bool DacControl::writeAvcVolumeState(int32_t value) {
 }
 
 bool DacControl::writeHifiModeState(int32_t value) {
-    bool ok = set(hifiPath, value);
+    bool ok = true;
+    if (value != HIFI_MODE_AUTO) {
+        ok = set(hifiPath, value);
+    } else {
+        // The audio HAL applies Auto before each playback; keep the current mode, Normal if none yet
+        int32_t applied = 0;
+        std::ifstream file(hifiPath);
+        if (!(file >> applied) || applied == 0)
+            ok = set(hifiPath, 0);
+    }
     return property_set(PROPERTY_HIFI_DAC_MODE, std::to_string(value).c_str()) == 0 && ok;
 }
 
