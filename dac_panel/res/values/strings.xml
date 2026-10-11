@@ -87,6 +87,8 @@
     <string name="dac_tile_format"><xliff:g id="rate" example="48 kHz">%1$s</xliff:g>/<xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
     <string name="dac_tile_dop">DoP</string>
     <string name="dac_tile_standby">Standby</string>
+    <string name="dac_tile_powered_off">Powered off</string>
+    <string name="dac_tile_off">Off</string>
     <string name="dac_tile_subtitle"><xliff:g id="state" example="48 kHz/24-bit">%1$s</xliff:g> · <xliff:g id="impedance" example="32 Ω">%2$s</xliff:g></string>
 
 </resources>

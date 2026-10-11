@@ -108,16 +108,32 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_INACTIVE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
-        quaddactile.setSubtitle(null);
+        quaddactile.setSubtitle(getResources().getString(R.string.dac_tile_off));
 	    quaddactile.updateTile();
     }
 
     private void setTileUnavailable()
     {
+        setTileUnavailable(null);
+    }
+
+    // Nothing plugged in: say whether the DAC will power up on the next plug
+    private void setTileUnplugged()
+    {
+        boolean enabled = false;
+        try {
+            enabled = DacControlInterface.isEnabled();
+        } catch(Exception e) {}
+        setTileUnavailable(getResources().getString(
+                enabled ? R.string.dac_tile_powered_off : R.string.dac_tile_off));
+    }
+
+    private void setTileUnavailable(String subtitle)
+    {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_UNAVAILABLE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
-        quaddactile.setSubtitle(null);
+        quaddactile.setSubtitle(subtitle);
 	    quaddactile.updateTile();
     }
 
@@ -143,7 +159,7 @@ public class QuadDACTileService extends TileService {
                         } catch(Exception e) {}
                         break;
                     case 0: // Headset unplugged
-                        setTileUnavailable();
+                        setTileUnplugged();
                         break;
                     default: break;
                 }
