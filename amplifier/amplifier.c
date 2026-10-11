@@ -349,9 +349,12 @@ static int lge_amplifier_set_parameters(struct amplifier_device* device, struct 
             // If this was triggered during playback, switch immediately!
             if (usecase->stream.out && (usecase->type == PCM_PLAYBACK) &&
 #ifndef TARGET_LEGACY_UM
-                compare_device_type(&usecase->device_list, AUDIO_DEVICE_OUT_WIRED_HEADPHONE)) {
+                (compare_device_type(&usecase->device_list, AUDIO_DEVICE_OUT_WIRED_HEADPHONE) ||
+                 compare_device_type(&usecase->device_list, AUDIO_DEVICE_OUT_WIRED_HEADSET))) {
 #else
-                (usecase->devices & AUDIO_DEVICE_OUT_WIRED_HEADPHONE)) {
+                // Headsets with a mic route here too
+                (usecase->devices & (AUDIO_DEVICE_OUT_WIRED_HEADPHONE |
+                                     AUDIO_DEVICE_OUT_WIRED_HEADSET))) {
 #endif
                 /*
                     HACK: when selecting devices, and the device is the same, QCOM audio HAL does
