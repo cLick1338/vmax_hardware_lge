@@ -6,7 +6,7 @@
     <string name="quad_dac">Hi-Fi Quad DAC</string>
     <string name="quad_dac_on">Quad DAC on</string>
     <string name="quad_dac_off">Quad DAC off</string>
-    <string name="quad_dac_unavail">Quad DAC unavailable</string>
+    <string name="quad_dac_tile">Quad DAC</string>
 
     <string name="quad_dac_settings">Quad DAC Settings</string>
 
@@ -48,20 +48,25 @@
     <string name="customizable_filter_coeffs">Customizable Filter Coefficients</string>
     <string name="customizable_filter_coeffs_summary">NOTE: If all coefficients are 0, audio will be muted</string>
 
-    <string name="hifi_mode">HiFi mode</string>
+    <string name="hifi_mode">Output mode</string>
 
-    <string name="hifi_mode_normal">Normal</string>
-    <string name="hifi_mode_him">High Impedance</string>
-    <string name="hifi_mode_aux-him">AUX High Impedance</string>
+    <string name="hifi_mode_auto">Auto</string>
+    <string name="hifi_mode_normal">Low impedance</string>
+    <string name="hifi_mode_him">High impedance</string>
+    <string name="hifi_mode_aux-him">AUX/Line out</string>
 
-    <string name="avc_volume">AVC Volume</string>
-    <string name="avc_volume_summary">Amplifies volume</string>
+    <string name="avc_volume">Analog Volume Control</string>
+    <string name="avc_volume_summary">Adjust if hissing or too quiet</string>
+    <string name="decibel_value"><xliff:g id="value" example="-14">%1$d</xliff:g> dB</string>
+
+    <string name="media_volume_steps">Digital volume steps</string>
+    <string name="media_volume_steps_default"><xliff:g id="steps" example="15">%1$d</xliff:g> steps (Android default)</string>
+    <string name="media_volume_steps_fine"><xliff:g id="steps" example="50">%1$d</xliff:g> steps of <xliff:g id="percent" example="2">%2$d</xliff:g>%%</string>
 
     <!-- Output status -->
-    <string name="dac_status">Output status</string>
+    <string name="dac_status">Status</string>
     <string name="dac_status_output">Output</string>
-    <string name="dac_status_headphones">Headphones</string>
-    <string name="dac_status_source">Playing</string>
+    <string name="dac_status_impedance">Impedance</string>
     <string name="dac_status_unavailable">Not available</string>
     <string name="dac_rate_khz"><xliff:g id="rate" example="44.1">%1$s</xliff:g> kHz</string>
     <string name="dac_output_hifi">Hi-Fi DAC, <xliff:g id="rate" example="48 kHz">%1$s</xliff:g> / <xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
@@ -73,12 +78,12 @@
     <string name="dac_impedance"><xliff:g id="ohms" example="32">%1$d</xliff:g> Ω</string>
     <string name="dac_impedance_lr">L <xliff:g id="left" example="32">%1$d</xliff:g> Ω, R <xliff:g id="right" example="33">%2$d</xliff:g> Ω</string>
     <string name="dac_impedance_lr_short"><xliff:g id="left" example="32">%1$d</xliff:g>/<xliff:g id="right" example="33">%2$d</xliff:g> Ω</string>
-    <string name="dac_impedance_uneven"><xliff:g id="impedance" example="L 20 Ω, R 147 Ω">%1$s</xliff:g>, uneven reading, replug the headphones</string>
-    <string name="dac_impedance_floating">Line out or external amplifier</string>
+    <string name="dac_impedance_uneven"><xliff:g id="impedance" example="L 20 Ω, R 147 Ω">%1$s</xliff:g>, uneven reading, reconnect</string>
+    <string name="dac_impedance_floating">AUX/Line out</string>
     <string name="dac_impedance_unknown">Not measured</string>
     <string name="dac_mode_suggestion"><xliff:g id="impedance" example="300 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="High Impedance">%2$s</xliff:g> mode suggested</string>
-    <string name="dac_source_none">Nothing playing</string>
-    <string name="dac_source_resampled"><xliff:g id="source" example="44.1 kHz">%1$s</xliff:g>, resampled to <xliff:g id="link" example="48 kHz">%2$s</xliff:g></string>
+    <string name="dac_mode_auto"><xliff:g id="impedance" example="32 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="Low impedance">%2$s</xliff:g> mode</string>
+    <string name="dac_mode_auto_pending"><xliff:g id="impedance" example="300 Ω">%1$s</xliff:g>, <xliff:g id="mode" example="High impedance">%2$s</xliff:g> mode from next playback</string>
     <string name="dac_tile_format"><xliff:g id="rate" example="48 kHz">%1$s</xliff:g>/<xliff:g id="bits" example="24">%2$d</xliff:g>-bit</string>
     <string name="dac_tile_dop">DoP</string>
     <string name="dac_tile_standby">Standby</string>

@@ -1,7 +1,11 @@
 package org.lineageos.settings.device.dac.utils;
 
+import android.content.Context;
 import android.media.AudioSystem;
+import android.os.IBinder;
+import android.os.Parcel;
 import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.os.SystemProperties;
 
 import java.util.ArrayList;
@@ -36,6 +40,7 @@ public class QuadDAC {
     {
         try {
             dac.setHifiDacState(true);
+            notifyAudioService();
 
             int mode = getDACMode();
             int left_balance = getLeftBalance();
@@ -75,6 +80,20 @@ public class QuadDAC {
     public static void disable() throws RemoteException
     {
         dac.setHifiDacState(false);
+        notifyAudioService();
+    }
+
+    // AudioService switches the music volume grid when it sees the property change
+    private static void notifyAudioService() {
+        IBinder audio = ServiceManager.getService(Context.AUDIO_SERVICE);
+        if (audio == null) return;
+        Parcel data = Parcel.obtain();
+        try {
+            audio.transact(IBinder.SYSPROPS_TRANSACTION, data, null, 0);
+        } catch (RemoteException e) {
+        } finally {
+            data.recycle();
+        }
     }
 
     public static ArrayList<Integer> getSupportedFeatures() {

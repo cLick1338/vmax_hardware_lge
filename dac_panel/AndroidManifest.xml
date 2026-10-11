@@ -39,7 +39,7 @@
         <service
             android:name=".QuadDACTileService"
             android:icon="@drawable/ic_quad_dac_icon"
-            android:label="@string/quad_dac"
+            android:label="@string/quad_dac_tile"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
 

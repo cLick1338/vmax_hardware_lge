@@ -2,14 +2,10 @@
 package org.lineageos.settings.device.dac.utils;
 
 import android.content.Context;
-import android.media.AudioDeviceInfo;
-import android.media.AudioManager;
-import android.media.AudioPlaybackConfiguration;
 
 import org.lineageos.settings.device.dac.R;
 
 import java.text.NumberFormat;
-import java.util.List;
 
 import vendor.lge.hardware.audio.dac.control.V2_1.DacState;
 import vendor.lge.hardware.audio.dac.control.V2_1.Impedance;
@@ -98,42 +94,18 @@ public final class DacStatus {
         if (suggested < 0)
             return context.getString(R.string.dac_impedance_unknown);
         String text = impedance(context, status, false);
+        String mode = context.getResources().getStringArray(R.array.hifi_mode_entry_values)[suggested];
+        // A floating reading already names the AUX/Line out mode
+        if (isFloating(status) && suggested == (selectedMode == Constants.HIFI_MODE_AUTO
+                ? status.hifiMode : selectedMode))
+            return text;
+        // Auto applies the mode when the DAC next starts, not while it is running
+        if (selectedMode == Constants.HIFI_MODE_AUTO)
+            return context.getString(status.hifiMode == suggested ? R.string.dac_mode_auto
+                    : R.string.dac_mode_auto_pending, text, mode);
         if (suggested == selectedMode)
             return text;
-        String mode = context.getResources().getStringArray(R.array.hifi_mode_entry_values)[suggested];
         return context.getString(R.string.dac_mode_suggestion, text, mode);
-    }
-
-    private static boolean isWired(AudioDeviceInfo device) {
-        return device.getType() == AudioDeviceInfo.TYPE_WIRED_HEADSET
-                || device.getType() == AudioDeviceInfo.TYPE_WIRED_HEADPHONES;
-    }
-
-    // Highest sample rate among started players on wired outputs, 0 if none
-    public static int sourceRate(Context context) {
-        AudioManager audioManager = context.getSystemService(AudioManager.class);
-        int rate = 0;
-        for (AudioPlaybackConfiguration config : audioManager.getActivePlaybackConfigurations()) {
-            if (config.getPlayerState() != AudioPlaybackConfiguration.PLAYER_STATE_STARTED)
-                continue;
-            // Routing is not always reported; only filter when it is
-            List<AudioDeviceInfo> devices = config.getAudioDeviceInfos();
-            if (!devices.isEmpty() && devices.stream().noneMatch(DacStatus::isWired))
-                continue;
-            rate = Math.max(rate, config.getSampleRate());
-        }
-        return rate;
-    }
-
-    public static String source(Context context, OutputStatus status) {
-        int rate = sourceRate(context);
-        if (rate == 0)
-            return context.getString(R.string.dac_source_none);
-        if (status != null && status.state == DacState.HIFI && status.dop == 0
-                && status.sampleRate != rate)
-            return context.getString(R.string.dac_source_resampled, formatRate(context, rate),
-                    formatRate(context, status.sampleRate));
-        return formatRate(context, rate);
     }
 
     // Short form for the QS tile, null when there is nothing useful to add

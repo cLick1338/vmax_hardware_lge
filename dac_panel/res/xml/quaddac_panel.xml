@@ -16,20 +16,8 @@
         app:title="@string/dac_status"
         app:isPreferenceVisible="false" >
 
-        <Preference
-            app:key="dac_status_output"
-            app:title="@string/dac_status_output"
-            app:selectable="false" />
-
-        <Preference
-            app:key="dac_status_headphones"
-            app:title="@string/dac_status_headphones"
-            app:selectable="false" />
-
-        <Preference
-            app:key="dac_status_source"
-            app:title="@string/dac_status_source"
-            app:selectable="false" />
+        <org.lineageos.settings.device.dac.ui.StatusPreference
+            app:key="dac_status_details" />
 
     </PreferenceCategory>
 
@@ -40,11 +28,11 @@
             app:key="hifi_mode_dropdown"
             app:title="@string/hifi_mode"
             app:summary="%s"
-            app:entries="@array/hifi_mode_entry_values"
-            app:entryValues="@array/hifi_mode_entry_values"
+            app:entries="@array/hifi_mode_choices"
+            app:entryValues="@array/hifi_mode_choice_values"
             app:isPreferenceVisible="false" />
 
-        <SeekBarPreference
+        <org.lineageos.settings.device.dac.ui.DecibelSeekBarPreference
             app:key="avc_volume_seekbar"
             app:title="@string/avc_volume"
             app:summary="@string/avc_volume_summary"
@@ -53,6 +41,15 @@
             android:max="0"
             app:defaultValue="-14"
             app:isPreferenceVisible="false" />
+
+        <SeekBarPreference
+            app:key="media_volume_steps"
+            app:title="@string/media_volume_steps"
+            app:persistent="false"
+            app:min="0"
+            android:max="2"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="true" />
 
         <ListPreference
             app:key="sound_preset_dropdown"

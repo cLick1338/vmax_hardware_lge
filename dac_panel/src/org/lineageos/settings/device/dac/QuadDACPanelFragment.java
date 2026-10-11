@@ -9,6 +9,7 @@ import android.media.AudioPlaybackConfiguration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
@@ -24,6 +25,7 @@ import android.view.MenuItem;
 
 import org.lineageos.settings.device.dac.ui.BalancePreference;
 import org.lineageos.settings.device.dac.ui.ButtonPreference;
+import org.lineageos.settings.device.dac.ui.StatusPreference;
 import org.lineageos.settings.device.dac.utils.Constants;
 import org.lineageos.settings.device.dac.utils.DacStatus;
 import org.lineageos.settings.device.dac.utils.QuadDAC;
@@ -47,6 +49,7 @@ public class QuadDACPanelFragment extends PreferenceFragment
     private ListPreference sound_preset_list, digital_filter_list, mode_list;
     private BalancePreference balance_preference;
     private SeekBarPreference avc_volume;
+    private SeekBarPreference media_volume_steps;
 
     /*** Custom filter UI props ***/
 
@@ -60,7 +63,7 @@ public class QuadDACPanelFragment extends PreferenceFragment
     private ButtonPreference custom_filter_reset_coeffs_button;
 
     private PreferenceCategory status_category;
-    private Preference status_output, status_headphones, status_source;
+    private StatusPreference status_details;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateStatusRunnable = this::updateStatus;
@@ -111,11 +114,15 @@ public class QuadDACPanelFragment extends PreferenceFragment
                 scheduleStatusUpdate();
                 return true;
             }
+            if (preference.getKey().equals(Constants.MEDIA_VOLUME_STEPS_KEY)) {
+                int steps = Constants.MEDIA_VOLUME_STEPS[(Integer) newValue];
+                SystemProperties.set(Constants.MEDIA_VOLUME_STEPS_PROP, Integer.toString(steps));
+                updateMediaVolumeSteps(steps);
+                return true;
+            }
             if (preference instanceof ListPreference) {
                 if (preference.getKey().equals(Constants.HIFI_MODE_KEY)) {
-                    ListPreference lp = (ListPreference) preference;
-
-                    int mode = lp.findIndexOfValue((String) newValue);
+                    int mode = Integer.parseInt((String) newValue);
                     DacControlInterface.setDACMode(mode);
                     scheduleStatusUpdate();
                     return true;
@@ -164,9 +171,6 @@ public class QuadDACPanelFragment extends PreferenceFragment
                 if (preference.getKey().equals(Constants.AVC_VOLUME_KEY)) {
                     if (newValue instanceof Integer) {
                         Integer avc_vol = (Integer) newValue;
-
-                        //avc_volume.setSummary( ((double)avc_vol) + " db");
-
                         DacControlInterface.setAVCVolume(avc_vol);
                         return true;
                     } else {
@@ -226,11 +230,9 @@ public class QuadDACPanelFragment extends PreferenceFragment
             return;
         try {
             OutputStatus status = DacControlInterface.getOutputStatus();
-            status_output.setSummary(
-                    DacStatus.output(getContext(), status, DacControlInterface.isEnabled()));
-            status_headphones.setSummary(
+            status_details.setStatus(
+                    DacStatus.output(getContext(), status, DacControlInterface.isEnabled()),
                     DacStatus.headphones(getContext(), status, DacControlInterface.getDACMode()));
-            status_source.setSummary(DacStatus.source(getContext(), status));
             if (DacStatus.isSettling(status)) {
                 handler.removeCallbacks(updateStatusRunnable);
                 handler.postDelayed(updateStatusRunnable, Constants.STATUS_POLL_MS);
@@ -278,10 +280,20 @@ public class QuadDACPanelFragment extends PreferenceFragment
 
         balance_preference = (BalancePreference) findPreference(Constants.BALANCE_KEY);
 
+        media_volume_steps = (SeekBarPreference) findPreference(Constants.MEDIA_VOLUME_STEPS_KEY);
+        media_volume_steps.setOnPreferenceChangeListener(this);
+        int chosen = SystemProperties.getInt(Constants.MEDIA_VOLUME_STEPS_PROP,
+                Constants.DEFAULT_MEDIA_VOLUME_STEPS);
+        int position = 0;
+        for (int i = 0; i < Constants.MEDIA_VOLUME_STEPS.length; i++) {
+            if (Constants.MEDIA_VOLUME_STEPS[i] == chosen)
+                position = i;
+        }
+        media_volume_steps.setValue(position);
+        updateMediaVolumeSteps(chosen);
+
         status_category = (PreferenceCategory) findPreference(Constants.STATUS_CATEGORY_KEY);
-        status_output = findPreference(Constants.STATUS_OUTPUT_KEY);
-        status_headphones = findPreference(Constants.STATUS_HEADPHONES_KEY);
-        status_source = findPreference(Constants.STATUS_SOURCE_KEY);
+        status_details = (StatusPreference) findPreference(Constants.STATUS_DETAILS_KEY);
 
         try {
             if (DacControlInterface.getOutputStatus() != null) {
@@ -311,7 +323,7 @@ public class QuadDACPanelFragment extends PreferenceFragment
             }
             if (DacControlInterface.getSupportedFeatures().contains(Feature.HifiMode)) {
                 mode_list.setVisible(true);
-                mode_list.setValueIndex(DacControlInterface.getDACMode());
+                mode_list.setValue(Integer.toString(DacControlInterface.getDACMode()));
             }
             if (DacControlInterface.getSupportedFeatures().contains(Feature.CustomFilter)) {
                 custom_filter_shape.setVisible(true);
@@ -349,6 +361,12 @@ public class QuadDACPanelFragment extends PreferenceFragment
         } catch (Exception e) {
             Log.d(TAG, "addPreferencesFromResource2: " + e.toString());
         }
+    }
+
+    private void updateMediaVolumeSteps(int steps) {
+        media_volume_steps.setSummary(100 % steps == 0
+                ? getString(R.string.media_volume_steps_fine, steps, 100 / steps)
+                : getString(R.string.media_volume_steps_default, steps));
     }
 
     private void enableExtraSettings()

@@ -98,7 +98,7 @@ public class QuadDACTileService extends TileService {
     {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_ACTIVE);
-        quaddactile.setLabel(getResources().getString(R.string.quad_dac_on));
+        quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
         quaddactile.setSubtitle(getSubtitle());
 	    quaddactile.updateTile();
     }
@@ -107,7 +107,7 @@ public class QuadDACTileService extends TileService {
     {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_INACTIVE);
-        quaddactile.setLabel(getResources().getString(R.string.quad_dac_off));
+        quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
         quaddactile.setSubtitle(null);
 	    quaddactile.updateTile();
     }
@@ -116,7 +116,7 @@ public class QuadDACTileService extends TileService {
     {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_UNAVAILABLE);
-        quaddactile.setLabel(getResources().getString(R.string.quad_dac_unavail));
+        quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
         quaddactile.setSubtitle(null);
 	    quaddactile.updateTile();
     }
