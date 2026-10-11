@@ -89,6 +89,7 @@ class DacControl : public IDacControl {
     FeatureStates getHifiModeStates();
     bool writeAvcVolumeState(int32_t value);
     bool writeHifiModeState(int32_t value);
+    bool openAudioDevice();
     bool setAudioHALParameters(KeyValue kv);
     bool setDigitalFilterState(int32_t value);
     bool setVolumeBalance(Feature direction, int32_t value);
