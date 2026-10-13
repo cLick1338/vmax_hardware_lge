@@ -52,7 +52,10 @@ cc_defaults {
 cc_binary {
     name: "vendor.lineage.livedisplay-service.lge",
     vintf_fragments: ["vendor.lineage.livedisplay-service.lge.xml"]
-    + select(soong_config_variable("livedisplay_lge", "enable_se"), {
+    + select(soong_config_variable("livedisplay_lge", "enable_dm"), {
+        "false": [],
+        default: ["vendor.lineage.livedisplay-service.lge-dm.xml"],
+    })+ select(soong_config_variable("livedisplay_lge", "enable_se"), {
         "true": ["vendor.lineage.livedisplay-service.lge-se.xml"],
         default: [],
     })+ select(soong_config_variable("livedisplay_lge", "enable_ce"), {
@@ -65,6 +68,9 @@ cc_binary {
     }) + select(soong_config_variable("livedisplay_lge", "enable_ce"), {
         "false": ["-DENABLE_CE=false"],
         default: ["-DENABLE_CE=true"],
+    }) + select(soong_config_variable("livedisplay_lge", "enable_dm"), {
+        "false": ["-DENABLE_DM=false"],
+        default: ["-DENABLE_DM=true"],
     }),
     init_rc: ["vendor.lineage.livedisplay-service.lge.rc"],
     defaults: ["livedisplay_lge_defaults"],

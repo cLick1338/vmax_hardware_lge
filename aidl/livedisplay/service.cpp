@@ -28,7 +28,8 @@ int main() {
     std::shared_ptr<SDMController> controller = std::make_shared<SDMController>();
 
     // AIDL frontend
-    std::shared_ptr<DisplayModes> dm = ndk::SharedRefBase::make<DisplayModes>();
+    std::shared_ptr<DisplayModes> dm =
+            ENABLE_DM ? ndk::SharedRefBase::make<DisplayModes>() : nullptr;
     std::shared_ptr<PictureAdjustment> pa = ndk::SharedRefBase::make<PictureAdjustment>(controller);
     std::shared_ptr<ColorEnhancement> ce =
             ENABLE_CE ? ndk::SharedRefBase::make<ColorEnhancement>(): nullptr;
