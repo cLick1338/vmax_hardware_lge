@@ -40,6 +40,8 @@ public class QuadDACTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
+        if (!isPlugged())
+            return;
         try {
             if (DacControlInterface.isEnabled()) {
                 DacControlInterface.disable();
@@ -61,6 +63,7 @@ public class QuadDACTileService extends TileService {
         IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         registerReceiver(headsetPluggedTileReceiver, filter);
         getSystemService(AudioManager.class).registerAudioPlaybackCallback(playbackCallback, handler);
+        refreshTile();
     }
 
     @Override
@@ -69,6 +72,28 @@ public class QuadDACTileService extends TileService {
         unregisterReceiver(headsetPluggedTileReceiver);
         getSystemService(AudioManager.class).unregisterAudioPlaybackCallback(playbackCallback);
         handler.removeCallbacks(updateSubtitleRunnable);
+    }
+
+    private boolean isPlugged() {
+        return getSystemService(AudioManager.class).isWiredHeadsetOn();
+    }
+
+    // No sticky plug broadcast after boot when unplugged, so set the state from the current plug state
+    private void refreshTile() {
+        if (getQsTile() == null)
+            return;
+        if (!DacControlInterface.dac_service_available) {
+            setTileUnavailable();
+        } else if (!isPlugged()) {
+            setTileUnplugged();
+        } else {
+            try {
+                if (DacControlInterface.isEnabled())
+                    setTileActive();
+                else
+                    setTileInactive();
+            } catch(Exception e) {}
+        }
     }
 
     private void scheduleSubtitleUpdate() {
