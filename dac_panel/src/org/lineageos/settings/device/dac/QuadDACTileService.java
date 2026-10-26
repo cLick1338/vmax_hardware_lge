@@ -17,6 +17,9 @@ import org.lineageos.settings.device.dac.utils.DacStatus;
 import org.lineageos.settings.device.dac.utils.QuadDAC;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class QuadDACTileService extends TileService {
 
@@ -28,6 +31,13 @@ public class QuadDACTileService extends TileService {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateSubtitleRunnable = this::updateSubtitle;
+    private final Runnable pollSubtitleRunnable = this::pollSubtitle;
+    private final ExecutorService statusExecutor = Executors.newSingleThreadExecutor();
+    private boolean listening;
+    private boolean readInFlight;
+    private int pollGeneration;
+    private String lastSubtitle;
+    private boolean subtitlePublished;
 
     private final AudioManager.AudioPlaybackCallback playbackCallback =
             new AudioManager.AudioPlaybackCallback() {
@@ -63,15 +73,91 @@ public class QuadDACTileService extends TileService {
         IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         registerReceiver(headsetPluggedTileReceiver, filter);
         getSystemService(AudioManager.class).registerAudioPlaybackCallback(playbackCallback, handler);
+        listening = true;
         refreshTile();
+        schedulePoll();
     }
 
     @Override
     public void onStopListening() {
         super.onStopListening();
+        listening = false;
+        stopPoll();
+        lastSubtitle = null;
+        subtitlePublished = false;
         unregisterReceiver(headsetPluggedTileReceiver);
         getSystemService(AudioManager.class).unregisterAudioPlaybackCallback(playbackCallback);
         handler.removeCallbacks(updateSubtitleRunnable);
+    }
+
+    @Override
+    public void onDestroy() {
+        listening = false;
+        stopPoll();
+        handler.removeCallbacks(updateSubtitleRunnable);
+        statusExecutor.shutdownNow();
+        super.onDestroy();
+    }
+
+    private void stopPoll() {
+        handler.removeCallbacks(pollSubtitleRunnable);
+        pollGeneration++;
+    }
+
+    private boolean shouldPoll() {
+        if (!listening || !isPlugged())
+            return false;
+        try {
+            return DacControlInterface.isEnabled();
+        } catch(Exception e) {
+            return false;
+        }
+    }
+
+    private void schedulePoll() {
+        handler.removeCallbacks(pollSubtitleRunnable);
+        if (shouldPoll())
+            handler.postDelayed(pollSubtitleRunnable, 1000);
+        else
+            stopPoll();
+    }
+
+    private void pollSubtitle() {
+        if (!shouldPoll()) {
+            stopPoll();
+            return;
+        }
+        if (readInFlight) {
+            schedulePoll();
+            return;
+        }
+        final int generation = pollGeneration;
+        readInFlight = true;
+        statusExecutor.execute(() -> {
+            String subtitle = getSubtitle();
+            handler.post(() -> {
+                readInFlight = false;
+                if (generation != pollGeneration)
+                    return;
+                if (!shouldPoll()) {
+                    stopPoll();
+                    return;
+                }
+                Tile tile = getQsTile();
+                if (tile != null && tile.getState() == Tile.STATE_ACTIVE)
+                    publishSubtitle(tile, subtitle);
+                schedulePoll();
+            });
+        });
+    }
+
+    private void publishSubtitle(Tile tile, String subtitle) {
+        if (subtitlePublished && Objects.equals(lastSubtitle, subtitle))
+            return;
+        tile.setSubtitle(subtitle);
+        tile.updateTile();
+        lastSubtitle = subtitle;
+        subtitlePublished = true;
     }
 
     private boolean isPlugged() {
@@ -115,8 +201,7 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         if (quaddactile == null || quaddactile.getState() != Tile.STATE_ACTIVE)
             return;
-        quaddactile.setSubtitle(getSubtitle());
-        quaddactile.updateTile();
+        publishSubtitle(quaddactile, getSubtitle());
     }
 
     private void setTileActive()
@@ -124,16 +209,22 @@ public class QuadDACTileService extends TileService {
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_ACTIVE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
-        quaddactile.setSubtitle(getSubtitle());
+        lastSubtitle = getSubtitle();
+        subtitlePublished = true;
+        quaddactile.setSubtitle(lastSubtitle);
 	    quaddactile.updateTile();
+        schedulePoll();
     }
 
     private void setTileInactive()
     {
+        stopPoll();
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_INACTIVE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
-        quaddactile.setSubtitle(getResources().getString(R.string.dac_tile_off));
+        lastSubtitle = getResources().getString(R.string.dac_tile_off);
+        subtitlePublished = true;
+        quaddactile.setSubtitle(lastSubtitle);
 	    quaddactile.updateTile();
     }
 
@@ -155,9 +246,12 @@ public class QuadDACTileService extends TileService {
 
     private void setTileUnavailable(String subtitle)
     {
+        stopPoll();
         Tile quaddactile = getQsTile();
         quaddactile.setState(Tile.STATE_UNAVAILABLE);
         quaddactile.setLabel(getResources().getString(R.string.quad_dac_tile));
+        lastSubtitle = subtitle;
+        subtitlePublished = true;
         quaddactile.setSubtitle(subtitle);
 	    quaddactile.updateTile();
     }
